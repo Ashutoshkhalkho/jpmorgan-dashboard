@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>JPMorgan · Quantitative Finance Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --ink:     #0d0f12;
+  --ink2:    #141720;
+  --ink3:    #1c2130;
+  --rule:    #232a38;
+  --rule2:   #2d3648;
+  --silver:  #8a96a8;
+  --fog:     #5a6477;
+  --paper:   #e8eaf0;
+  --white:   #f4f6fa;
+  --gold:    #c8a96e;
+  --gold2:   #e8c88a;
+  --blue:    #4a7fd4;
+  --blue2:   #6b9de8;
+  --green:   #3db87a;
+  --red:     #e05c6b;
+}
+html { scroll-behavior: smooth; }
+body {
+  background: var(--ink);
+  color: var(--paper);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-weight: 300;
+  min-height: 100vh;
+}
+
+/* ── HEADER ── */
+header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 0 48px;
+  height: 68px;
+  background: var(--ink2);
+  border-bottom: 1px solid var(--rule);
+  position: sticky; top: 0; z-index: 100;
+}
+.hdr-left { display: flex; align-items: center; }
+.firm-bar { width: 3px; height: 30px; background: linear-gradient(180deg,var(--gold2),var(--gold)); border-radius: 2px; margin-right: 14px; }
+.firm-name { font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 600; color: var(--white); letter-spacing: 0.3px; }
+.firm-name em { color: var(--gold); font-style: normal; }
+.hdr-center { text-align: center; font-size: 9px; letter-spacing: 4px; text-transform: uppercase; color: var(--fog); }
+.hdr-right { display: flex; justify-content: flex-end; align-items: center; gap: 20px; }
+.live { display: flex; align-items: center; gap: 6px; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--green); }
+.live::before { content:''; width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 8px var(--green); animation: blink 2s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+.hdr-date { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--fog); }
+
+/* ── TICKER STRIP ── */
+.strip {
+  background: var(--ink3);
+  border-bottom: 1px solid var(--rule);
+  padding: 0 48px; height: 38px;
+  display: flex; align-items: center; gap: 36px;
+  overflow-x: auto;
+}
+.strip::-webkit-scrollbar { display: none; }
+.tick { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.tsep { width:1px; height:14px; background:var(--rule2); flex-shrink:0; }
+.tsym { font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:500; color:var(--gold); letter-spacing:1px; }
+.tval { font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--white); }
+.tchg { font-family:'IBM Plex Mono',monospace; font-size:10px; }
+.up{color:var(--green)} .dn{color:var(--red)}
+
+/* ── PAGE ── */
+.page { max-width: 1320px; margin: 0 auto; padding: 40px 48px 64px; }
+
+/* ── SECTION HEADER ── */
+.sec {
+  display: flex; align-items: baseline; gap: 14px;
+  margin-bottom: 22px;
+}
+.sec-n { font-family:'IBM Plex Mono',monospace; font-size:9px; color:var(--gold); letter-spacing:2px; flex-shrink:0; }
+.sec-t { font-family:'Playfair Display',serif; font-size:17px; font-weight:600; color:var(--white); }
+.sec-r { flex:1; height:1px; background:var(--rule); }
+.sec-s { font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--fog); flex-shrink:0; }
+
+/* ── SKILLS BAND ── */
+.skills-band {
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--gold);
+  background: var(--ink2);
+  padding: 16px 24px;
+  margin-bottom: 36px;
+  display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+}
+.sk-lbl { font-size:9px; letter-spacing:3px; text-transform:uppercase; color:var(--gold); flex-shrink:0; font-weight:500; }
+.sk-sep { width:1px; height:18px; background:var(--rule2); }
+.sk-list { display:flex; flex-wrap:wrap; gap:8px; }
+.sk-tag { font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--silver); padding:4px 11px; border:1px solid var(--rule2); }
+
+/* ── KPI ROW ── */
+.kpi-row {
+  display: grid; grid-template-columns: repeat(6,1fr);
+  gap: 1px; background: var(--rule);
+  border: 1px solid var(--rule); margin-bottom: 36px;
+}
+.kpi { background:var(--ink2); padding:22px 20px; position:relative; transition:background .2s; }
+.kpi:hover { background:var(--ink3); }
+.kpi-top { position:absolute; top:0; left:0; right:0; height:2px; background:var(--rule2); }
+.kpi.hl .kpi-top { background:var(--gold); }
+.kpi.pos .kpi-top { background:var(--green); }
+.kpi.neg .kpi-top { background:var(--red); }
+.kpi-lbl { font-size:9px; letter-spacing:2.5px; text-transform:uppercase; color:var(--fog); margin-bottom:10px; }
+.kpi-val { font-family:'IBM Plex Mono',monospace; font-size:20px; font-weight:400; color:var(--white); letter-spacing:-.5px; margin-bottom:5px; }
+.kpi-meta { font-family:'IBM Plex Mono',monospace; font-size:9px; color:var(--fog); }
+
+/* ── MAIN GRID ── */
+.main-grid { display:grid; grid-template-columns:1.65fr 1fr; gap:20px; margin-bottom:36px; }
+
+/* ── PANEL ── */
+.panel { background:var(--ink2); border:1px solid var(--rule); }
+.ph { padding:16px 22px; border-bottom:1px solid var(--rule); display:flex; align-items:center; justify-content:space-between; }
+.pt { font-family:'Playfair Display',serif; font-size:13px; font-weight:600; color:var(--white); }
+.pm { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--fog); }
+.pb { padding:22px; }
+
+/* ── TICKER TABS ── */
+.ttabs { display:flex; border:1px solid var(--rule2); width:fit-content; }
+.tbtn {
+  padding:5px 16px; background:transparent; border:none; border-right:1px solid var(--rule2);
+  color:var(--fog); cursor:pointer; font-family:'IBM Plex Mono',monospace;
+  font-size:11px; font-weight:500; letter-spacing:1px; transition:all .15s;
+}
+.tbtn:last-child { border-right:none; }
+.tbtn:hover { color:var(--white); background:var(--ink3); }
+.tbtn.active { background:var(--gold); color:var(--ink); }
+
+/* ── CHART ── */
+svg.chart { width:100%; height:210px; display:block; }
+.cbg { fill:var(--ink); }
+.cg { stroke:var(--rule); stroke-width:1; }
+.cl { fill:none; stroke:var(--gold); stroke-width:1.5; }
+.cs { fill:none; stroke:var(--blue2); stroke-width:1; stroke-dasharray:3 3; }
+.ca { fill:url(#gGrad); }
+.clbl { font-family:'IBM Plex Mono',monospace; font-size:9px; fill:var(--fog); }
+.chart-leg { display:flex; gap:18px; margin-top:10px; }
+.leg { display:flex; align-items:center; gap:6px; font-size:10px; color:var(--fog); font-family:'IBM Plex Mono',monospace; }
+.leg-ln { width:18px; height:1.5px; border-radius:1px; }
+
+/* ── SIGNALS ── */
+.sig-row {
+  display:grid; grid-template-columns:56px 74px 1fr;
+  gap:10px; align-items:center;
+  padding:9px 0; border-bottom:1px solid var(--rule);
+}
+.sig-row:last-child { border-bottom:none; }
+.sday { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--fog); }
+.sprice { font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--white); }
+.sbadge { display:inline-block; padding:2px 9px; font-size:9px; letter-spacing:1.5px; text-transform:uppercase; font-weight:500; border:1px solid; }
+.sbuy  { color:var(--green); border-color:rgba(61,184,122,.3); background:rgba(61,184,122,.07); }
+.ssell { color:var(--red);   border-color:rgba(224,92,107,.3); background:rgba(224,92,107,.07); }
+.snone { font-size:11px; color:var(--fog); padding:10px 0; }
+
+/* ── FULL PANEL ── */
+.fpanel { background:var(--ink2); border:1px solid var(--rule); margin-bottom:36px; }
+
+/* ── DATA TABLE ── */
+.dtbl { width:100%; border-collapse:collapse; }
+.dtbl thead tr { border-bottom:1px solid var(--rule); }
+.dtbl th { padding:10px 16px; text-align:right; font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--fog); font-weight:400; }
+.dtbl th:first-child { text-align:left; }
+.dtbl td { padding:11px 16px; text-align:right; font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--silver); border-bottom:1px solid rgba(35,42,56,.5); }
+.dtbl td:first-child { text-align:left; }
+.dtbl tbody tr:hover td { background:rgba(200,169,110,.04); color:var(--white); }
+.tdp { color:var(--white) !important; font-weight:500; }
+.opt-t { display:inline-block; padding:2px 9px; font-size:9px; letter-spacing:2px; text-transform:uppercase; border:1px solid; font-weight:500; }
+.oc { color:var(--blue2); border-color:rgba(107,157,232,.35); background:rgba(107,157,232,.08); }
+.op { color:var(--red);   border-color:rgba(224,92,107,.35);  background:rgba(224,92,107,.08); }
+
+/* ── CREDIT GRID ── */
+.cgrid { display:grid; grid-template-columns:repeat(2,1fr); gap:1px; background:var(--rule); border:1px solid var(--rule); margin-bottom:36px; }
+.cc { background:var(--ink2); padding:26px; }
+.cc-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px; }
+.ccn { font-family:'Playfair Display',serif; font-size:14px; color:var(--white); font-weight:600; }
+.ccid { font-family:'IBM Plex Mono',monospace; font-size:9px; color:var(--fog); letter-spacing:1px; margin-top:3px; }
+.ccsn { font-family:'IBM Plex Mono',monospace; font-size:26px; font-weight:300; line-height:1; }
+.ccsm { font-size:9px; color:var(--fog); letter-spacing:1px; text-align:right; }
+.ccbar { height:2px; background:var(--rule2); margin-bottom:16px; overflow:hidden; }
+.ccfill { height:100%; transition:width 1s cubic-bezier(.4,0,.2,1); }
+.ccf { display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
+.ccrow { display:flex; justify-content:space-between; }
+.cck { font-size:9px; letter-spacing:1px; text-transform:uppercase; color:var(--fog); }
+.ccv { font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--silver); }
+.ccver { display:flex; justify-content:space-between; align-items:center; padding-top:14px; border-top:1px solid var(--rule); }
+.crisk { font-size:9px; letter-spacing:2px; text-transform:uppercase; padding:3px 10px; border:1px solid; font-weight:500; }
+.rlow  { color:var(--green); border-color:rgba(61,184,122,.35);  background:rgba(61,184,122,.06); }
+.rmed  { color:var(--gold);  border-color:rgba(200,169,110,.35); background:rgba(200,169,110,.06); }
+.rhigh { color:var(--red);   border-color:rgba(224,92,107,.35);  background:rgba(224,92,107,.06); }
+.cdec { font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:500; letter-spacing:1px; }
+
+/* ── FADE IN ── */
+.fi { opacity:0; transform:translateY(10px); animation:fi .5s ease forwards; }
+@keyframes fi { to{opacity:1;transform:translateY(0)} }
+.d1{animation-delay:.05s} .d2{animation-delay:.1s} .d3{animation-delay:.15s}
+.d4{animation-delay:.2s}  .d5{animation-delay:.25s} .d6{animation-delay:.3s}
+
+/* ── FOOTER ── */
+footer {
+  border-top:1px solid var(--rule); padding:22px 48px;
+  display:flex; justify-content:space-between; align-items:center;
+}
+.fl { font-size:10px; color:var(--fog); letter-spacing:1px; }
+.fr { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--fog); }
+.fg { color:var(--gold); }
+
+@media(max-width:1024px){
+  .kpi-row{grid-template-columns:repeat(3,1fr)}
+  .main-grid{grid-template-columns:1fr}
+  .cgrid{grid-template-columns:1fr}
+  .page{padding:28px 20px 48px}
+  header,.strip,footer{padding-left:20px;padding-right:20px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr-left">
+    <div class="firm-bar"></div>
+    <div class="firm-name"><em>JP</em>Morgan Chase</div>
+  </div>
+  <div class="hdr-center">Quantitative Finance &nbsp;·&nbsp; Job Simulation</div>
+  <div class="hdr-right">
+    <div class="live">Market Open</div>
+    <div class="hdr-date" id="hdrDate"></div>
+  </div>
+</header>
+
+<div class="strip" id="strip"></div>
+
+<div class="page">
+
+  <!-- SKILLS -->
+  <div class="skills-band fi">
+    <span class="sk-lbl">Competencies</span>
+    <div class="sk-sep"></div>
+    <div class="sk-list" id="skList"></div>
+  </div>
+
+  <!-- 01 KPI -->
+  <div class="sec fi d1">
+    <span class="sec-n">01</span>
+    <span class="sec-t">Portfolio Overview</span>
+    <div class="sec-r"></div>
+    <span class="sec-s">252 Trading Days · Simulated</span>
+  </div>
+  <div class="kpi-row fi d2" id="kpiRow"></div>
+
+  <!-- 02 CHART -->
+  <div class="sec fi d2">
+    <span class="sec-n">02</span>
+    <span class="sec-t">Price Analysis &amp; Trading Signals</span>
+    <div class="sec-r"></div>
+    <span class="sec-s">SMA Cross Strategy</span>
+  </div>
+  <div class="main-grid fi d3">
+    <div class="panel">
+      <div class="ph">
+        <span class="pt">Closing Price · SMA-20 Overlay</span>
+        <div class="ttabs" id="ttabs"></div>
+      </div>
+      <div class="pb">
+        <svg class="chart" viewBox="0 0 700 210" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="gGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#c8a96e" stop-opacity=".17"/>
+              <stop offset="90%" stop-color="#c8a96e" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <rect class="cbg" width="700" height="210"/>
+          <g id="cGrid"></g>
+          <path class="ca" id="cArea"/>
+          <path class="cl" id="cLine"/>
+          <path class="cs" id="cSMA"/>
+          <g id="cLbls"></g>
+        </svg>
+        <div class="chart-leg">
+          <div class="leg"><div class="leg-ln" style="background:var(--gold)"></div>Close Price</div>
+          <div class="leg"><div class="leg-ln" style="background:repeating-linear-gradient(to right,var(--blue2) 0,var(--blue2) 3px,transparent 3px,transparent 6px)"></div>SMA-20</div>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="ph">
+        <span class="pt">Signal Log</span>
+        <span class="pm">Golden · Death Cross</span>
+      </div>
+      <div class="pb" id="sigLog"></div>
+    </div>
+  </div>
+
+  <!-- 03 OPTIONS -->
+  <div class="sec fi d3">
+    <span class="sec-n">03</span>
+    <span class="sec-t">Black-Scholes Derivatives Pricing</span>
+    <div class="sec-r"></div>
+    <span class="sec-s">European Options · Greeks</span>
+  </div>
+  <div class="fpanel fi d4">
+    <div class="ph">
+      <span class="pt">Options Chain · S=$150 · K=$155 · T=0.5yr · r=5%</span>
+      <span class="pm">Volatility Surface: 15% · 25% · 35%</span>
+    </div>
+    <div class="pb" style="padding-top:0">
+      <table class="dtbl">
+        <thead><tr>
+          <th>Type</th><th>Volatility (σ)</th><th>Option Price</th>
+          <th>Delta (Δ)</th><th>Gamma (Γ)</th><th>Theta (Θ)</th><th>Vega (ν)</th>
+        </tr></thead>
+        <tbody id="optBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 04 CREDIT -->
+  <div class="sec fi d4">
+    <span class="sec-n">04</span>
+    <span class="sec-t">Credit Risk Assessment</span>
+    <div class="sec-r"></div>
+    <span class="sec-s">Proprietary Scoring Algorithm</span>
+  </div>
+  <div class="cgrid fi d5" id="cgrid"></div>
+
+  <!-- 05 STATS -->
+  <div class="sec fi d5">
+    <span class="sec-n">05</span>
+    <span class="sec-t">Statistical Summary</span>
+    <div class="sec-r"></div>
+    <span class="sec-s">Descriptive · Risk · Return</span>
+  </div>
+  <div class="fpanel fi d6">
+    <div class="ph">
+      <span class="pt">Equity Performance Metrics · 252-Day Simulation</span>
+      <span class="pm">Geometric Brownian Motion</span>
+    </div>
+    <div class="pb" style="padding-top:0">
+      <table class="dtbl">
+        <thead><tr>
+          <th>Ticker</th><th>Price</th><th>Total Return</th>
+          <th>Sharpe Ratio</th><th>Ann. Volatility</th><th>Max Drawdown</th><th>Mean Daily Ret.</th>
+        </tr></thead>
+        <tbody id="statBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <div class="fl">ASHUTOSH &nbsp;·&nbsp; <span class="fg">JP Morgan Chase Job Simulation</span> &nbsp;·&nbsp; Quantitative Finance Project</div>
+  <div class="fr">For educational &amp; portfolio purposes only &nbsp;·&nbsp; <span class="fg">2024</span></div>
+</footer>
+
+<script>
+/* ── DATA ENGINE ── */
+function rng(seed){
+  let s=seed>>>0;
+  return ()=>{s=Math.imul(1664525,s)+1013904223>>>0;return s/0xFFFFFFFF};
+}
+function genStock(days,start,seed){
+  const r=rng(seed),d=[]; let p=start;
+  for(let i=0;i<days;i++){
+    const u1=Math.max(1e-9,r()),u2=r();
+    const z=Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2);
+    p*=Math.exp((.0002-.5*.015*.015)+.015*z);
+    d.push(+p.toFixed(2));
+  }
+  return d;
+}
+function sma(d,w){return d.map((_,i)=>i<w-1?null:+(d.slice(i-w+1,i+1).reduce((a,b)=>a+b,0)/w).toFixed(2))}
+function stats(d){
+  const r=d.slice(1).map((c,i)=>(c-d[i])/d[i]);
+  const m=r.reduce((a,b)=>a+b,0)/r.length;
+  const s=Math.sqrt(r.reduce((a,b)=>a+(b-m)**2,0)/r.length);
+  let pk=d[0],mx=0; d.forEach(p=>{if(p>pk)pk=p;mx=Math.max(mx,(pk-p)/pk)});
+  return{last:+d[d.length-1].toFixed(2),ret:+((d[d.length-1]-d[0])/d[0]*100).toFixed(2),sharpe:+(m/s*Math.sqrt(252)).toFixed(3),annVol:+(s*Math.sqrt(252)*100).toFixed(2),maxDD:+(mx*100).toFixed(2),meanRet:+(m*100).toFixed(4)};
+}
+function ncdf(x){
+  const a=[.254829592,-.284496736,1.421413741,-1.453152027,1.061405429],p=.3275911,sg=x<0?-1:1;
+  x=Math.abs(x)/Math.sqrt(2);const t=1/(1+p*x);
+  return .5*(1+sg*(1-(((((a[4]*t+a[3])*t)+a[2])*t+a[1])*t+a[0])*t*Math.exp(-x*x)));
+}
+function bs(S,K,T,r,sig,tp){
+  const d1=(Math.log(S/K)+(r+.5*sig*sig)*T)/(sig*Math.sqrt(T)),d2=d1-sig*Math.sqrt(T);
+  const nd1=Math.exp(-d1*d1/2)/Math.sqrt(2*Math.PI);
+  const pr=tp==='call'?S*ncdf(d1)-K*Math.exp(-r*T)*ncdf(d2):K*Math.exp(-r*T)*ncdf(-d2)-S*ncdf(-d1);
+  return{price:+pr.toFixed(3),delta:+(tp==='call'?ncdf(d1):ncdf(d1)-1).toFixed(4),gamma:+(nd1/(S*sig*Math.sqrt(T))).toFixed(6),theta:+(-(S*sig*nd1/(2*Math.sqrt(T)))-r*K*Math.exp(-r*T)*(tp==='call'?ncdf(d2):ncdf(-d2))).toFixed(4)/365,vega:+(S*Math.sqrt(T)*nd1/100).toFixed(4)};
+}
+function cscore(cs,dti,loan,inc,emp){
+  let s=0;
+  s+=cs>=750?40:cs>=700?30:cs>=650?20:cs>=600?10:0;
+  s+=dti<.20?25:dti<.35?15:dti<.43?8:0;
+  const l=loan/inc; s+=l<2?20:l<3.5?12:l<5?5:0;
+  s+=emp>=5?15:emp>=2?10:emp>=1?5:0;
+  const cls=s>=80?'low':s>=55?'med':'high';
+  return{score:s,cls,risk:s>=80?'Low Risk':s>=55?'Moderate Risk':s>=35?'High Risk':'Very High Risk',action:s>=55?'Approve':'Reject'};
+}
+
+const TKS=[{sym:'AAPL',start:172.1,seed:11},{sym:'JPM',start:198.4,seed:22},{sym:'TSLA',start:248.7,seed:33}];
+let activeT=0;
+
+/* ── DATE ── */
+document.getElementById('hdrDate').textContent=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}).toUpperCase();
+
+/* ── STRIP ── */
+(()=>{
+  const extras=[{sym:'S&P 500',val:5234.18,chg:.42},{sym:'NASDAQ',val:16482.3,chg:-.18},{sym:'DJIA',val:38764.2,chg:.31},{sym:'VIX',val:14.82,chg:-3.21},{sym:'10Y UST',val:4.312,chg:.02}];
+  const all=[...TKS.map(tk=>{const s=stats(genStock(252,tk.start,tk.seed));return{sym:tk.sym,val:s.last,chg:s.ret/252}}),...extras];
+  document.getElementById('strip').innerHTML=all.map((t,i)=>`${i?'<div class="tsep"></div>':''}<div class="tick"><span class="tsym">${t.sym}</span><span class="tval">${t.val.toFixed(2)}</span><span class="tchg ${t.chg>=0?'up':'dn'}">${t.chg>=0?'▲':'▼'} ${Math.abs(t.chg).toFixed(2)}%</span></div>`).join('');
+})();
+
+/* ── SKILLS ── */
+['Python Programming','Data Analysis','Statistics','Algorithm Development','Financial Derivatives','Credit Analysis','Critical Thinking','Black-Scholes Model','Risk Scoring','Signal Detection','Quantitative Methods']
+  .forEach(s=>document.getElementById('skList').insertAdjacentHTML('beforeend',`<span class="sk-tag">${s}</span>`));
+
+/* ── KPI ── */
+(()=>{
+  const all=TKS.map(tk=>({...stats(genStock(252,tk.start,tk.seed)),sym:tk.sym}));
+  const avgR=(all.reduce((s,a)=>s+a.ret,0)/all.length).toFixed(2);
+  const avgSh=(all.reduce((s,a)=>s+a.sharpe,0)/all.length).toFixed(3);
+  const avgV=(all.reduce((s,a)=>s+a.annVol,0)/all.length).toFixed(2);
+  const cards=[
+    {l:'Portfolio Return',v:`${avgR}%`,m:'Avg · 252 days',c:parseFloat(avgR)>=0?'pos':'neg'},
+    {l:'Avg Sharpe Ratio',v:avgSh,m:'Risk-adjusted',c:'hl'},
+    {l:'AAPL · Close',v:`$${all[0].last}`,m:`Return ${all[0].ret}%`,c:''},
+    {l:'JPM · Close',v:`$${all[1].last}`,m:`Return ${all[1].ret}%`,c:''},
+    {l:'TSLA · Close',v:`$${all[2].last}`,m:`Return ${all[2].ret}%`,c:''},
+    {l:'Ann. Volatility',v:`${avgV}%`,m:'σ × √252 · Avg',c:'neg'},
+  ];
+  document.getElementById('kpiRow').innerHTML=cards.map(c=>`<div class="kpi ${c.c}"><div class="kpi-top"></div><div class="kpi-lbl">${c.l}</div><div class="kpi-val">${c.v}</div><div class="kpi-meta">${c.m}</div></div>`).join('');
+})();
+
+/* ── CHART ── */
+function drawChart(idx){
+  const tk=TKS[idx],W=700,H=210,PL=8,PR=44,PT=10,PB=20;
+  const d=genStock(252,tk.start,tk.seed),s=sma(d,20);
+  const mn=Math.min(...d)*.995,mx=Math.max(...d)*1.005;
+  const sx=i=>PL+(i/(d.length-1))*(W-PL-PR);
+  const sy=v=>PT+(1-(v-mn)/(mx-mn))*(H-PT-PB);
+
+  const pts=d.map((v,i)=>`${sx(i).toFixed(1)},${sy(v).toFixed(1)}`);
+  document.getElementById('cArea').setAttribute('d',`M ${sx(0).toFixed(1)},${H-PB} `+pts.map(p=>`L ${p}`).join(' ')+` L ${sx(d.length-1).toFixed(1)},${H-PB} Z`);
+  document.getElementById('cLine').setAttribute('d',pts.map((p,i)=>`${i?'L':'M'} ${p}`).join(' '));
+
+  let sp='',il=false;
+  s.forEach((v,i)=>{if(!v){il=false;return}sp+=(il?'L ':'M ')+`${sx(i).toFixed(1)},${sy(v).toFixed(1)} `;il=true});
+  document.getElementById('cSMA').setAttribute('d',sp);
+
+  const g=document.getElementById('cGrid'); g.innerHTML='';
+  [.2,.4,.6,.8].forEach(f=>{
+    const y=(PT+f*(H-PT-PB)).toFixed(1),v=(mx-f*(mx-mn)).toFixed(0);
+    g.innerHTML+=`<line class="cg" x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}"/>`;
+    g.innerHTML+=`<text class="clbl" x="${W-PR+4}" y="${+y+3}">${v}</text>`;
+  });
+
+  const sigs=[];
+  for(let i=1;i<s.length;i++){
+    if(!s[i]||!s[i-1])continue;
+    if(s[i-1]<d[i-1]&&s[i]>d[i])sigs.push({day:i,price:d[i],t:'sell'});
+    else if(s[i-1]>d[i-1]&&s[i]<d[i])sigs.push({day:i,price:d[i],t:'buy'});
+  }
+  const sl=document.getElementById('sigLog');
+  sl.innerHTML=sigs.length?sigs.slice(0,8).map(s=>`<div class="sig-row"><span class="sday">Day ${s.day}</span><span class="sprice">$${s.price.toFixed(2)}</span><span class="sbadge ${s.t==='buy'?'sbuy':'ssell'}">${s.t==='buy'?'Buy Signal':'Sell Signal'}</span></div>`).join(''):`<div class="snone">No crossover signals detected for this period.</div>`;
+}
+
+/* ── TICKER TABS ── */
+(()=>{
+  const wrap=document.getElementById('ttabs');
+  TKS.forEach((tk,i)=>{
+    const b=document.createElement('button');
+    b.className='tbtn'+(i===0?' active':''); b.textContent=tk.sym;
+    b.onclick=()=>{wrap.querySelectorAll('.tbtn').forEach(x=>x.classList.remove('active'));b.classList.add('active');activeT=i;drawChart(i)};
+    wrap.appendChild(b);
+  });
+})();
+drawChart(0);
+
+/* ── OPTIONS ── */
+(()=>{
+  const vols=[.15,.25,.35]; let html='';
+  ['call','put'].forEach(tp=>{
+    vols.forEach((v,vi)=>{
+      const r=bs(150,155,.5,.05,v,tp);
+      html+=`<tr><td>${vi===0?`<span class="opt-t ${tp==='call'?'oc':'op'}">${tp.toUpperCase()}</span>`:''}</td><td class="tdp">${(v*100).toFixed(0)}%</td><td class="tdp">$${r.price}</td><td>${r.delta}</td><td>${r.gamma}</td><td>${r.theta}</td><td>${r.vega}</td></tr>`;
+    });
+    html+=`<tr><td colspan="7" style="padding:3px;border-bottom:1px solid var(--rule2)"></td></tr>`;
+  });
+  document.getElementById('optBody').innerHTML=html;
+})();
+
+/* ── CREDIT ── */
+(()=>{
+  const apps=[
+    {n:'Alexandra Chen',id:'CL-2024-001',cs:760,dti:.22,loan:200000,inc:90000,emp:6},
+    {n:'Marcus Williams',id:'CL-2024-002',cs:620,dti:.45,loan:350000,inc:60000,emp:1},
+    {n:'Priya Sharma',id:'CL-2024-003',cs:700,dti:.30,loan:180000,inc:75000,emp:3},
+    {n:"James O'Brien",id:'CL-2024-004',cs:650,dti:.38,loan:260000,inc:70000,emp:2},
+  ];
+  const bc={low:'var(--green)',med:'var(--gold)',high:'var(--red)'};
+  document.getElementById('cgrid').innerHTML=apps.map(a=>{
+    const r=cscore(a.cs,a.dti,a.loan,a.inc,a.emp),col=bc[r.cls];
+    const ac=r.action==='Approve'?'var(--green)':'var(--red)';
+    return `<div class="cc">
+      <div class="cc-top">
+        <div><div class="ccn">${a.n}</div><div class="ccid">${a.id}</div></div>
+        <div><div class="ccsn" style="color:${col}">${r.score}</div><div class="ccsm">/ 100</div></div>
+      </div>
+      <div class="ccbar"><div class="ccfill" style="width:${r.score}%;background:${col}"></div></div>
+      <div class="ccf">
+        <div class="ccrow"><span class="cck">Credit Score</span><span class="ccv">${a.cs}</span></div>
+        <div class="ccrow"><span class="cck">Debt-to-Income</span><span class="ccv">${(a.dti*100).toFixed(0)}%</span></div>
+        <div class="ccrow"><span class="cck">Loan Amount</span><span class="ccv">$${a.loan.toLocaleString()}</span></div>
+        <div class="ccrow"><span class="cck">Annual Income</span><span class="ccv">$${a.inc.toLocaleString()}</span></div>
+        <div class="ccrow"><span class="cck">Employment</span><span class="ccv">${a.emp} yrs</span></div>
+      </div>
+      <div class="ccver">
+        <span class="crisk r${r.cls}">${r.risk}</span>
+        <span class="cdec" style="color:${ac}">${r.action.toUpperCase()}</span>
+      </div>
+    </div>`;
+  }).join('');
+})();
+
+/* ── STATS ── */
+(()=>{
+  document.getElementById('statBody').innerHTML=TKS.map(tk=>{
+    const s=stats(genStock(252,tk.start,tk.seed));
+    const rc=s.ret>=0?'var(--green)':'var(--red)';
+    return `<tr><td class="tdp" style="font-family:'IBM Plex Mono',monospace;color:var(--gold)">${tk.sym}</td><td class="tdp">$${s.last}</td><td style="color:${rc}">${s.ret}%</td><td>${s.sharpe}</td><td>${s.annVol}%</td><td style="color:var(--red)">${s.maxDD}%</td><td>${s.meanRet}%</td></tr>`;
+  }).join('');
+})();
+</script>
+</body>
+</html>
